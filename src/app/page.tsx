@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core"
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, UniqueIdentifier, Over } from "@dnd-kit/core"
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers"
 import { v4 as uuidv4 } from "uuid"
@@ -49,10 +49,15 @@ export default function Home() {
     saveToLocalStorage("cachedThemes", cachedThemes)
   }, [cachedThemes])
 
-  const handleDragEnd = (event: any) => {
+  interface DragEndEvent {
+    active: { id: UniqueIdentifier }
+    over: Over | null
+  }
+
+  const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
 
-    if (active.id !== over.id) {
+    if (over && active.id !== over.id) {
       setTodos((items) => {
         const oldIndex = items.findIndex((item) => item.id === active.id)
         const newIndex = items.findIndex((item) => item.id === over.id)
@@ -132,6 +137,71 @@ export default function Home() {
     setMode(mode === "dark" ? "light" : "dark")
   }
 
+  const updateCachedThemes = (themes: TodoTheme[]) => {
+    setCachedThemes(themes)
+    saveToLocalStorage("cachedThemes", themes)
+  }
+
+  const [tempTodo, setTempTodo] = useState<Todo>({
+    id: "temp",
+    title: "",
+    completed: false,
+    description: "",
+    dueDate: null,
+    theme: {
+      name: "Temporary",
+      sources: {
+        primary: { hue: 0, chroma: 0, tone: 80, hex: "#B0B0B0" },
+        secondary: { hue: 0, chroma: 0, tone: 90, hex: "#D3D3D3" },
+      },
+      primary: { hue: 0, chroma: 0, tone: 80, hex: "#B0B0B0" },
+      secondary: { hue: 0, chroma: 0, tone: 90, hex: "#D3D3D3" },
+      background: { hue: 0, chroma: 0, tone: 95, hex: "#F0F0F0" },
+    },
+    createdAt: new Date().toISOString(),
+  });
+
+  // Add a key to force re-render of temp todo
+  const [tempTodoKey, setTempTodoKey] = useState(0);
+
+  const handleTempTodoChange = (updatedTempTodo: Todo) => {
+    setTempTodo(updatedTempTodo);
+  };
+
+  const handleTempTodoSave = (value: string) => {
+    if (value.trim() !== "") {
+      const newTodo: Todo = {
+        id: uuidv4(),
+        title: value,
+        completed: false,
+        description: "",
+        dueDate: null,
+        theme: cachedThemes.length > 0 ? { ...cachedThemes[0] } : undefined,
+        createdAt: new Date().toISOString(),
+      };
+
+      setTodos((prevTodos) => [...prevTodos, newTodo]);
+      setTempTodo((prev) => ({
+        ...prev,
+        title: "",
+        description: "",
+      }));
+      // Increment key to force re-render and reset edit state
+      setTempTodoKey(prev => prev + 1);
+      enqueueSnackbar("New todo added", { variant: "success" });
+    }
+  };
+
+  const handleTempTodoCancel = () => {
+    setTempTodo((prev) => ({
+      ...prev,
+      title: "",
+      description: "",
+    }));
+    // Increment key to force re-render and reset edit state
+    setTempTodoKey(prev => prev + 1);
+  };
+
   return (
     <Box sx={{ position: "relative", minHeight: "100vh", overflow: "hidden", bgcolor: m3Colors.background }}>
       <ParticleBackground particleColor={m3Colors.primary} />
@@ -163,7 +233,7 @@ export default function Home() {
           onDragEnd={handleDragEnd}
           modifiers={[restrictToVerticalAxis]}
         >
-          <SortableContext items={todos.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+          <SortableContext items={[...todos.map((t) => t.id), tempTodo.id]} strategy={verticalListSortingStrategy}>
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
               {todos.map((todo) => (
                 <TodoItem
@@ -176,16 +246,23 @@ export default function Home() {
                   isSelected={selectedTodos.includes(todo.id)}
                   cachedThemes={cachedThemes}
                   onSaveTheme={saveTheme}
+                  doubleClickToEdit
                 />
               ))}
-
-              {todos.length === 0 && (
-                <Box sx={{ textAlign: "center", py: 8 }}>
-                  <Typography variant="h6" color="text.secondary">
-                    No todos yet. Add your first one!
-                  </Typography>
-                </Box>
-              )}
+              <TodoItem
+                key={`temp-${tempTodoKey}`}
+                todo={tempTodo}
+                onUpdate={handleTempTodoChange}
+                onSave={handleTempTodoSave}
+                onCancel={handleTempTodoCancel}
+                onDelete={() => {}}
+                onDuplicate={() => {}}
+                onToggleSelect={() => {}}
+                isSelected={false}
+                cachedThemes={cachedThemes}
+                onSaveTheme={saveTheme}
+                startEditing
+              />
             </Box>
           </SortableContext>
         </DndContext>
@@ -221,7 +298,7 @@ export default function Home() {
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         cachedThemes={cachedThemes}
-        onSaveTheme={saveTheme}
+        onUpdateThemes={updateCachedThemes}
       />
 
       <ImportExportDialog

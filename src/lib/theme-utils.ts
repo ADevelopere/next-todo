@@ -3,6 +3,7 @@ import {
   argbFromHex,
   hexFromArgb,
   CorePalette,
+  Hct,
 } from "@material/material-color-utilities";
 
 export interface M3Colors {
@@ -29,33 +30,61 @@ export interface M3Colors {
   surfaceVariant: string;
   onSurfaceVariant: string;
   outline: string;
+  outlineVariant: string;
   shadow: string;
 }
 
+export interface HCTColor {
+  hue: number;
+  chroma: number;
+  tone: number;
+  hex: string;
+}
+
 export interface M3SourceColors {
-  primary: string;
-  secondary?: string;
-  tertiary?: string;
-  error?: string;
-  neutral?: string;
+  primary: HCTColor;
+  secondary?: HCTColor;
+  tertiary?: HCTColor;
+  error?: HCTColor;
+  neutral?: HCTColor;
+}
+
+export function hexToHCT(hex: string): HCTColor {
+  const hct = Hct.fromInt(parseInt(hex.slice(1), 16));
+  return {
+    hue: hct.hue,
+    chroma: hct.chroma,
+    tone: hct.tone,
+    hex: hex,
+  };
+}
+
+export function hctToHex(color: HCTColor): string {
+  const hct = Hct.from(color.hue, color.chroma, color.tone);
+  const argb = hct.toInt();
+  return '#' + argb.toString(16).padStart(6, '0');
 }
 
 export function generateM3Colors(
-  sources: M3SourceColors,
+  sources: Partial<M3SourceColors>,
   isDark: boolean
 ): M3Colors {
-  // Generate base theme from primary
-  const baseTheme = themeFromSourceColor(argbFromHex(sources.primary));
-  const basePalette = CorePalette.of(argbFromHex(sources.primary));
+  // Ensure we have at least primary color
+  if (!sources.primary?.hex) {
+    sources.primary = hexToHCT("#6750A4"); // Default primary color
+  }
 
-  if (sources.secondary) {
-    basePalette.a2 = CorePalette.of(argbFromHex(sources.secondary)).a1;
+  const baseTheme = themeFromSourceColor(argbFromHex(sources.primary.hex));
+  const basePalette = CorePalette.of(argbFromHex(sources.primary.hex));
+
+  if (sources.secondary?.hex) {
+    basePalette.a2 = CorePalette.of(argbFromHex(sources.secondary.hex)).a1;
   }
-  if (sources.tertiary) {
-    basePalette.a3 = CorePalette.of(argbFromHex(sources.tertiary)).a1;
+  if (sources.tertiary?.hex) {
+    basePalette.a3 = CorePalette.of(argbFromHex(sources.tertiary.hex)).a1;
   }
-  if (sources.error) {
-    basePalette.error = CorePalette.of(argbFromHex(sources.error)).error;
+  if (sources.error?.hex) {
+    basePalette.error = CorePalette.of(argbFromHex(sources.error.hex)).error;
   }
 
   const m3Theme = isDark ? baseTheme.schemes.dark : baseTheme.schemes.light;
@@ -84,8 +113,19 @@ export function generateM3Colors(
     surfaceVariant: hexFromArgb(m3Theme.surfaceVariant),
     onSurfaceVariant: hexFromArgb(m3Theme.onSurfaceVariant),
     outline: hexFromArgb(m3Theme.outline),
+    outlineVariant: hexFromArgb(m3Theme.outlineVariant),
     shadow: hexFromArgb(m3Theme.shadow),
   };
+}
+
+export function ensureHCTColor(color: string | HCTColor | undefined): HCTColor {
+  if (!color) {
+    return hexToHCT("#6750A4"); // Default color
+  }
+  if (typeof color === 'string') {
+    return hexToHCT(color);
+  }
+  return color;
 }
 
 export type ThemeMode = "light" | "dark";
@@ -101,10 +141,15 @@ export type SavedTheme = {
 };
 
 export function saveThemeToStorage(key: string, value: unknown): void {
-  localStorage.setItem(key, JSON.stringify(value));
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(key, JSON.stringify(value));
+  }
 }
 
 export function loadThemeFromStorage<T>(key: string): T | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
   const saved = localStorage.getItem(key);
   return saved ? (JSON.parse(saved) as T) : null;
 }

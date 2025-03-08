@@ -12,7 +12,6 @@ import {
   Typography,
   Checkbox,
   IconButton,
-  TextField,
   ThemeProvider,
   createTheme,
   Collapse,
@@ -25,6 +24,7 @@ import { DragIndicator, ExpandMore, ExpandLess, Delete, ContentCopy, Palette } f
 import { DatePicker } from "@mui/x-date-pickers"
 import type { Todo, TodoTheme } from "@/src/lib/types"
 import ThemeSelector from "./theme-selector"
+import EditableTypography from "@/src/components/ui/EditableTypography"
 
 interface TodoItemProps {
   todo: Todo
@@ -46,7 +46,11 @@ export default function TodoItem({
   isSelected,
   cachedThemes,
   onSaveTheme,
-}: TodoItemProps) {
+  doubleClickToEdit = false,
+  onSave,
+  onCancel,
+  startEditing = false,
+}: Readonly<TodoItemProps> & { doubleClickToEdit?: boolean; onSave?: (value: string) => void; onCancel?: () => void; startEditing?: boolean }) {
   const [expanded, setExpanded] = useState(false)
   const [themeAnchorEl, setThemeAnchorEl] = useState<HTMLButtonElement | null>(null)
   const systemTheme = useMuiTheme()
@@ -62,24 +66,26 @@ export default function TodoItem({
     palette: {
       mode: systemTheme.palette.mode,
       primary: {
-        main: todo.theme?.primary || systemTheme.palette.primary.main,
+        main: todo.theme?.primary.hex ?? systemTheme.palette.primary.main,
       },
       secondary: {
-        main: todo.theme?.secondary || systemTheme.palette.secondary.main,
+        main: todo.theme?.secondary.hex ?? systemTheme.palette.secondary.main,
       },
       background: {
-        default: systemTheme.palette.background.default,
-        paper: todo.theme?.background || systemTheme.palette.background.paper,
+        default: todo.theme?.background.hex ?? systemTheme.palette.background.default,
       },
     },
   })
 
-  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onUpdate({ ...todo, title: e.target.value })
+  const handleTitleChange = async (value: string) => {
+    onUpdate({ ...todo, title: value })
+    if (onSave) {
+      onSave(value)
+    }
   }
 
-  const handleDescriptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onUpdate({ ...todo, description: e.target.value })
+  const handleDescriptionChange = async (value: string) => {
+    onUpdate({ ...todo, description: value })
   }
 
   const handleCompletedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -114,7 +120,7 @@ export default function TodoItem({
         elevation={3}
         sx={{
           p: 2,
-          borderLeft: todo.theme ? `6px solid ${todo.theme.primary}` : undefined,
+          borderLeft: todo.theme ? `6px solid ${todo.theme.primary.hex}` : undefined,
           opacity: todo.completed ? 0.7 : 1,
           transition: "all 0.2s ease",
         }}
@@ -128,17 +134,14 @@ export default function TodoItem({
 
           <Checkbox checked={todo.completed} onChange={handleCompletedChange} color="primary" sx={{ mr: 1 }} />
 
-          <TextField
+          <EditableTypography
+            typography={{ variant: "body1", sx: { textDecoration: todo.completed ? "line-through" : "none" } }}
+            textField={{ variant: "standard", fullWidth: true }}
+            onSave={handleTitleChange}
             value={todo.title}
-            onChange={handleTitleChange}
-            variant="standard"
-            fullWidth
-            sx={{
-              textDecoration: todo.completed ? "line-through" : "none",
-              "& .MuiInputBase-input": {
-                fontWeight: "bold",
-              },
-            }}
+            doubleClickToEdit={doubleClickToEdit}
+            startEditing={startEditing}
+            onCancel={onCancel}
           />
 
           <Box sx={{ display: "flex", ml: "auto" }}>
@@ -170,15 +173,11 @@ export default function TodoItem({
 
         <Collapse in={expanded}>
           <Box sx={{ mt: 2 }}>
-            <TextField
-              label="Description"
+            <EditableTypography
+              typography={{ variant: "body2" }}
+              textField={{ variant: "outlined", fullWidth: true, multiline: true, rows: 3 }}
+              onSave={handleDescriptionChange}
               value={todo.description}
-              onChange={handleDescriptionChange}
-              multiline
-              rows={3}
-              fullWidth
-              variant="outlined"
-              sx={{ mb: 2 }}
             />
 
             <DatePicker

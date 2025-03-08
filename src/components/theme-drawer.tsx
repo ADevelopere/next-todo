@@ -5,18 +5,19 @@ import {
   Drawer,
   Box,
   Typography,
-  Button,
   Divider,
-  TextField,
   Grid2 as MuiGrid,
   IconButton,
+  useTheme
 } from "@mui/material";
 import { Close, Delete, Edit } from "@mui/icons-material";
-import { HexColorPicker } from "react-colorful";
 import type { TodoTheme } from "@/src/lib/types";
 import { useThemeContext } from "./theme-provider";
-import type { M3SourceColors } from "@/src/lib/theme-utils";
-
+import type { M3SourceColors, HCTColor } from "@/src/lib/theme-utils";
+import HCTColorPicker from "./hct-color-picker";
+import CoreColors from "./core-colors";
+import { hexToHCT } from "@/src/lib/theme-utils";
+import { saveToLocalStorage } from "@/src/lib/storage"
 interface ThemeDrawerProps {
   readonly open: boolean;
   readonly onClose: () => void;
@@ -30,20 +31,27 @@ export default function ThemeDrawer({
   cachedThemes,
   onUpdateThemes,
 }: ThemeDrawerProps) {
+  const muiTheme = useTheme();
   const { sourceColors, setSourceColors, m3Colors } = useThemeContext();
-  const [activeColor, setActiveColor] =
-    useState<keyof M3SourceColors>("primary");
+  const [activeColor, setActiveColor] = useState<keyof M3SourceColors>("primary");
   const [editingTheme, setEditingTheme] = useState<TodoTheme | null>(null);
-  const [themeName, setThemeName] = useState("");
+  const [colorMatchEnabled, setColorMatchEnabled] = useState(false);
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
 
+  // Initialize colors once when drawer opens
   useEffect(() => {
-    if (open) {
-      setEditingTheme(null);
-      setThemeName("");
+    if (open && !sourceColors.primary) {
+      setSourceColors({
+        primary: hexToHCT("#6750A4"),
+        secondary: hexToHCT("#958DA5"),
+        tertiary: hexToHCT("#B58392"),
+        error: hexToHCT("#B3261E"),
+        neutral: hexToHCT("#939094"),
+      });
     }
   }, [open]);
 
-  const handleColorChange = (color: string) => {
+  const handleColorChange = (color: HCTColor) => {
     setSourceColors({
       ...sourceColors,
       [activeColor]: color,
@@ -51,34 +59,35 @@ export default function ThemeDrawer({
   };
 
   const handleClose = () => {
-    if (themeName) {
-      const newTheme: TodoTheme = {
-        name: themeName,
-        sources: sourceColors,
-        primary: m3Colors.primary,
-        secondary: m3Colors.secondary,
-        background: m3Colors.background,
-      };
+    const newTheme: TodoTheme = {
+      name: editingTheme?.name ?? `Theme ${cachedThemes.length + 1}`,
+      sources: sourceColors,
+      primary: hexToHCT(m3Colors.primary),
+      secondary: hexToHCT(m3Colors.secondary),
+      background: hexToHCT(m3Colors.background),
+    };
 
-      if (editingTheme) {
-        onUpdateThemes(
-          cachedThemes.map((t) => (t.name === editingTheme.name ? newTheme : t))
-        );
-      } else {
-        onUpdateThemes([...cachedThemes, newTheme]);
-      }
+    if (editingTheme) {
+      onUpdateThemes(
+        cachedThemes.map((t) => (t.name === editingTheme.name ? newTheme : t))
+      );
+    } else {
+      onUpdateThemes([...cachedThemes, newTheme]);
     }
+
+    saveToLocalStorage("cachedThemes", cachedThemes);
     onClose();
   };
 
   const handleDeleteTheme = (index: number) => {
-    onUpdateThemes(cachedThemes.filter((_, i) => i !== index));
+    const updatedThemes = cachedThemes.filter((_, i) => i !== index);
+    onUpdateThemes(updatedThemes);
+    saveToLocalStorage("cachedThemes", updatedThemes);
   };
 
   const handleEditTheme = (theme: TodoTheme) => {
     setEditingTheme(theme);
     setSourceColors(theme.sources); // Use source colors from theme
-    setThemeName(theme.name ?? "");
   };
 
   return (
@@ -88,7 +97,11 @@ export default function ThemeDrawer({
       onClose={handleClose}
       slotProps={{
         paper: {
-          sx: { width: { xs: "100%", sm: 400 } },
+          sx: { 
+            width: { xs: "100%", sm: 400 },
+            backgroundColor: muiTheme.palette.background.default,
+            color: muiTheme.palette.text.primary,
+          },
         },
       }}
     >
@@ -109,49 +122,26 @@ export default function ThemeDrawer({
 
         <Divider sx={{ mb: 3 }} />
 
-        <TextField
-          label="Theme Name (optional)"
-          value={themeName}
-          onChange={(e) => setThemeName(e.target.value)}
-          fullWidth
-          margin="normal"
-          variant="outlined"
+        <CoreColors
+          colors={sourceColors}
+          colorMatchEnabled={colorMatchEnabled}
+          onColorMatchChange={setColorMatchEnabled}
+          onColorSelect={(color: keyof M3SourceColors) => {
+            setActiveColor(color);
+            setColorPickerOpen(true);
+          }}
+          selectedColor={activeColor}
         />
 
-        <MuiGrid container spacing={2} sx={{ mt: 1, mb: 2 }}>
-          {(["primary", "secondary", "tertiary", "error"] as const).map(
-            (color) => (
-              <MuiGrid size={{ xs: 3 }} key={color}>
-                <Button
-                  onClick={() => setActiveColor(color)}
-                  fullWidth
-                  sx={{
-                    textTransform: "capitalize",
-                    color:
-                      activeColor === color ? "primary.main" : "text.secondary",
-                  }}
-                >
-                  {color}
-                </Button>
-              </MuiGrid>
-            )
-          )}
-        </MuiGrid>
-
-        <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
-          <HexColorPicker
-            color={sourceColors[activeColor] ?? "#000000"}
-            onChange={handleColorChange}
-            style={{ width: "100%", height: 200 }}
-          />
-        </Box>
-
-        <TextField
-          value={sourceColors[activeColor] ?? "#000000"}
-          onChange={(e) => handleColorChange(e.target.value)}
-          fullWidth
-          size="small"
-          variant="outlined"
+        <HCTColorPicker
+          open={colorPickerOpen}
+          initialColor={sourceColors[activeColor] ?? hexToHCT("#6750A4")}
+          onColorChange={handleColorChange}
+          onApply={(color: HCTColor) => {
+            handleColorChange(color);
+            setColorPickerOpen(false);
+          }}
+          onCancel={() => setColorPickerOpen(false)}
         />
 
         <Divider sx={{ my: 3 }} />
@@ -169,7 +159,7 @@ export default function ThemeDrawer({
                   alignItems: "center",
                   p: 1,
                   border: 1,
-                  borderColor: "divider",
+                  borderColor: muiTheme.palette.divider,
                   borderRadius: 1,
                 }}
               >
@@ -188,7 +178,7 @@ export default function ThemeDrawer({
                         height: 24,
                         borderRadius: "50%",
                         backgroundColor:
-                          theme.sources[color as keyof M3SourceColors],
+                          theme.sources[color as keyof M3SourceColors]?.hex ?? '#000000',
                       }}
                     />
                   ))}
