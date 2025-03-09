@@ -76,6 +76,9 @@ export function generateM3Colors(
 
   const baseTheme = themeFromSourceColor(argbFromHex(sources.primary.hex));
   const basePalette = CorePalette.of(argbFromHex(sources.primary.hex));
+  const neutralPalette = sources.neutral 
+    ? CorePalette.of(argbFromHex(sources.neutral.hex)).n1
+    : basePalette.n1;
 
   if (sources.secondary?.hex) {
     basePalette.a2 = CorePalette.of(argbFromHex(sources.secondary.hex)).a1;
@@ -88,6 +91,13 @@ export function generateM3Colors(
   }
 
   const m3Theme = isDark ? baseTheme.schemes.dark : baseTheme.schemes.light;
+
+  // Override background and surface colors with proper M3 tonal values
+  const backgroundTone = isDark ? 6 : 99; // Updated light mode tone to 99 for proper M3 background
+  const surfaceTone = isDark ? 10 : 96;   // Updated light mode tone to 96 for proper M3 surface
+  
+  const background = hexFromArgb(neutralPalette.tone(backgroundTone));
+  const surface = hexFromArgb(neutralPalette.tone(surfaceTone));
 
   return {
     primary: hexFromArgb(m3Theme.primary),
@@ -106,9 +116,9 @@ export function generateM3Colors(
     onError: hexFromArgb(m3Theme.onError),
     errorContainer: hexFromArgb(m3Theme.errorContainer),
     onErrorContainer: hexFromArgb(m3Theme.onErrorContainer),
-    background: hexFromArgb(m3Theme.background),
+    background,
     onBackground: hexFromArgb(m3Theme.onBackground),
-    surface: hexFromArgb(m3Theme.surface),
+    surface,
     onSurface: hexFromArgb(m3Theme.onSurface),
     surfaceVariant: hexFromArgb(m3Theme.surfaceVariant),
     onSurfaceVariant: hexFromArgb(m3Theme.onSurfaceVariant),

@@ -73,20 +73,23 @@ const EditableTypography: React.FC<EditableTypographyProps> = ({
   };
 
   const handleSave = async () => {
-    if (isValid) {
-      const validationError = isValid(inputValue);
-      if (validationError) {
-        setError(validationError);
+    const trimmedValue = inputValue.trim();
+    if (trimmedValue !== "") {
+      if (isValid) {
+        const validationError = isValid(trimmedValue);
+        if (validationError) {
+          setError(validationError);
+          return;
+        }
+      }
+      const saveResult = await onSave(trimmedValue);
+      if (typeof saveResult === "string" && saveResult) {
+        setError(saveResult);
         return;
       }
+      setError(undefined);
+      setIsEditing(false);
     }
-    const saveResult = await onSave(inputValue);
-    if (typeof saveResult === "string" && saveResult) {
-      setError(saveResult);
-      return;
-    }
-    setError(undefined);
-    setIsEditing(false);
   };
 
   const handleCancel = () => {

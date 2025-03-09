@@ -56,11 +56,25 @@ export default function TodoItem({
   const systemTheme = useMuiTheme()
 
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: todo.id })
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
+  
+  const sortableProps = todo.id !== 'creator' ? {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
     transition,
+  } : {
+    attributes: {},
+    listeners: {},
+    setNodeRef: () => {},
+    transform: null,
+    transition: undefined,
   }
+
+  const style = sortableProps.transform ? {
+    transform: CSS.Transform.toString(sortableProps.transform),
+    transition: sortableProps.transition,
+  } : undefined
 
   const todoTheme = createTheme({
     palette: {
@@ -78,15 +92,24 @@ export default function TodoItem({
   })
 
   const handleTitleChange = async (value: string) => {
-    onUpdate({ ...todo, title: value })
-    if (onSave) {
-      onSave(value)
+    const trimmedValue = value.trim();
+    if (trimmedValue !== "") {
+      onUpdate({ ...todo, title: trimmedValue });
+      if (onSave) {
+        onSave(trimmedValue);
+      }
+    } else {
+      // If it's not the creator, revert to previous title
+      if (todo.id !== 'creator') {
+        onUpdate({ ...todo }); // This will trigger a re-render with the original title
+      }
     }
-  }
+  };
 
   const handleDescriptionChange = async (value: string) => {
-    onUpdate({ ...todo, description: value })
-  }
+    const trimmedValue = value.trim();
+    onUpdate({ ...todo, description: trimmedValue });
+  };
 
   const handleCompletedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onUpdate({ ...todo, completed: e.target.checked })
@@ -126,17 +149,30 @@ export default function TodoItem({
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center" }}>
-          <IconButton {...attributes} {...listeners} size="small" sx={{ cursor: "grab", mr: 1 }}>
-            <DragIndicator />
-          </IconButton>
-
-          <Checkbox checked={isSelected} onChange={() => onToggleSelect(todo.id)} size="small" sx={{ mr: 1 }} />
-
-          <Checkbox checked={todo.completed} onChange={handleCompletedChange} color="primary" sx={{ mr: 1 }} />
+          {/* Only show these controls for regular todos, not the creator */}
+          {todo.id !== 'creator' && (
+            <>
+              <IconButton {...attributes} {...listeners} size="small" sx={{ cursor: "grab", mr: 1 }}>
+                <DragIndicator />
+              </IconButton>
+              <Checkbox checked={isSelected} onChange={() => onToggleSelect(todo.id)} size="small" sx={{ mr: 1 }} />
+              <Checkbox checked={todo.completed} onChange={handleCompletedChange} color="primary" sx={{ mr: 1 }} />
+            </>
+          )}
 
           <EditableTypography
-            typography={{ variant: "body1", sx: { textDecoration: todo.completed ? "line-through" : "none" } }}
-            textField={{ variant: "standard", fullWidth: true }}
+            typography={{ 
+              variant: "body1", 
+              sx: { 
+                textDecoration: todo.completed ? "line-through" : "none",
+                flex: 1
+              } 
+            }}
+            textField={{ 
+              variant: "standard", 
+              fullWidth: true,
+              placeholder: todo.id === 'creator' ? "Create a new todo..." : undefined
+            }}
             onSave={handleTitleChange}
             value={todo.title}
             doubleClickToEdit={doubleClickToEdit}
@@ -145,55 +181,63 @@ export default function TodoItem({
           />
 
           <Box sx={{ display: "flex", ml: "auto" }}>
-            <Tooltip title="Theme">
-              <IconButton size="small" onClick={openThemeSelector}>
-                <Palette fontSize="small" />
-              </IconButton>
-            </Tooltip>
+            {/* Only show theme picker for regular todos */}
+            {todo.id !== 'creator' && (
+              <>
+                <Tooltip title="Theme">
+                  <IconButton size="small" onClick={openThemeSelector}>
+                    <Palette fontSize="small" />
+                  </IconButton>
+                </Tooltip>
 
-            <Tooltip title="Duplicate">
-              <IconButton size="small" onClick={() => onDuplicate(todo.id)}>
-                <ContentCopy fontSize="small" />
-              </IconButton>
-            </Tooltip>
+                <Tooltip title="Duplicate">
+                  <IconButton size="small" onClick={() => onDuplicate(todo.id)}>
+                    <ContentCopy fontSize="small" />
+                  </IconButton>
+                </Tooltip>
 
-            <Tooltip title="Delete">
-              <IconButton size="small" onClick={() => onDelete(todo.id)}>
-                <Delete fontSize="small" />
-              </IconButton>
-            </Tooltip>
+                <Tooltip title="Delete">
+                  <IconButton size="small" onClick={() => onDelete(todo.id)}>
+                    <Delete fontSize="small" />
+                  </IconButton>
+                </Tooltip>
 
-            <Tooltip title={expanded ? "Collapse" : "Expand"}>
-              <IconButton size="small" onClick={() => setExpanded(!expanded)}>
-                {expanded ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
-              </IconButton>
-            </Tooltip>
+                <Tooltip title={expanded ? "Collapse" : "Expand"}>
+                  <IconButton size="small" onClick={() => setExpanded(!expanded)}>
+                    {expanded ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
+                  </IconButton>
+                </Tooltip>
+              </>
+            )}
           </Box>
         </Box>
 
-        <Collapse in={expanded}>
-          <Box sx={{ mt: 2 }}>
-            <EditableTypography
-              typography={{ variant: "body2" }}
-              textField={{ variant: "outlined", fullWidth: true, multiline: true, rows: 3 }}
-              onSave={handleDescriptionChange}
-              value={todo.description}
-            />
+        {/* Only show expanded content for regular todos */}
+        {todo.id !== 'creator' && (
+          <Collapse in={expanded}>
+            <Box sx={{ mt: 2 }}>
+              <EditableTypography
+                typography={{ variant: "body2" }}
+                textField={{ variant: "outlined", fullWidth: true, multiline: true, rows: 3 }}
+                onSave={handleDescriptionChange}
+                value={todo.description}
+              />
 
-            <DatePicker
-              label="Due Date"
-              value={todo.dueDate ? new Date(todo.dueDate) : null}
-              onChange={handleDateChange}
-              slotProps={{ textField: { fullWidth: true, variant: "outlined" } }}
-            />
+              <DatePicker
+                label="Due Date"
+                value={todo.dueDate ? new Date(todo.dueDate) : null}
+                onChange={handleDateChange}
+                slotProps={{ textField: { fullWidth: true, variant: "outlined" } }}
+              />
 
-            {todo.createdAt && (
-              <Typography variant="caption" display="block" sx={{ mt: 2, color: "text.secondary" }}>
-                Created: {format(new Date(todo.createdAt), "PPP")}
-              </Typography>
-            )}
-          </Box>
-        </Collapse>
+              {todo.createdAt && (
+                <Typography variant="caption" display="block" sx={{ mt: 2, color: "text.secondary" }}>
+                  Created: {format(new Date(todo.createdAt), "PPP")}
+                </Typography>
+              )}
+            </Box>
+          </Collapse>
+        )}
 
         <Popover
           open={themeOpen}

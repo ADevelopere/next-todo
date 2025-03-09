@@ -25,7 +25,7 @@ const defaultSourceColors: M3SourceColors = {
   secondary: hexToHCT("#958DA5"),
   tertiary: hexToHCT("#B58392"),
   error: hexToHCT("#B3261E"),
-  neutral: hexToHCT("#939094"),
+  neutral: hexToHCT("#1C1B1F"),  // Added neutral color for better background tones
 };
 
 interface ThemeContextType {

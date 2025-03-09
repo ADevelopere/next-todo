@@ -105,7 +105,12 @@ export default function ThemeDrawer({
         },
       }}
     >
-      <Box sx={{ p: 3 }}>
+      <Box sx={{ 
+        p: 3,
+        bgcolor: m3Colors.surface,
+        color: m3Colors.onSurface,
+        minHeight: '100%'
+      }}>
         <Box
           sx={{
             display: "flex",
@@ -114,13 +119,12 @@ export default function ThemeDrawer({
             mb: 2,
           }}
         >
-          <Typography variant="h6">Theme Customization</Typography>
-          <IconButton onClick={handleClose}>
+          <Typography variant="h6" sx={{ color: m3Colors.onSurface }}>Theme Customization</Typography>
+          <IconButton onClick={handleClose} sx={{ color: m3Colors.onSurfaceVariant }}>
             <Close />
           </IconButton>
         </Box>
-
-        <Divider sx={{ mb: 3 }} />
+        <Divider sx={{ mb: 3, bgcolor: m3Colors.outlineVariant }} />
 
         <CoreColors
           colors={sourceColors}
@@ -144,12 +148,10 @@ export default function ThemeDrawer({
           onCancel={() => setColorPickerOpen(false)}
         />
 
-        <Divider sx={{ my: 3 }} />
-
-        <Typography variant="subtitle1" gutterBottom>
+        <Divider sx={{ my: 3, bgcolor: m3Colors.outlineVariant }} />
+        <Typography variant="subtitle1" gutterBottom sx={{ color: m3Colors.onSurface }}>
           Recent Themes
         </Typography>
-
         <MuiGrid container spacing={2}>
           {cachedThemes.map((theme, index) => (
             <MuiGrid size={{ xs: 12 }} key={theme.name ?? index}>
@@ -159,8 +161,9 @@ export default function ThemeDrawer({
                   alignItems: "center",
                   p: 1,
                   border: 1,
-                  borderColor: muiTheme.palette.divider,
+                  borderColor: m3Colors.outlineVariant,
                   borderRadius: 1,
+                  bgcolor: m3Colors.surfaceVariant,
                 }}
               >
                 <Box
@@ -182,7 +185,7 @@ export default function ThemeDrawer({
                       }}
                     />
                   ))}
-                  <Typography sx={{ ml: 1 }}>
+                  <Typography sx={{ ml: 1, color: m3Colors.onSurfaceVariant }}>
                     {theme.name ?? "Unnamed Theme"}
                   </Typography>
                 </Box>
@@ -190,12 +193,14 @@ export default function ThemeDrawer({
                   <IconButton
                     size="small"
                     onClick={() => handleEditTheme(theme)}
+                    sx={{ color: m3Colors.onSurfaceVariant }}
                   >
                     <Edit fontSize="small" />
                   </IconButton>
                   <IconButton
                     size="small"
                     onClick={() => handleDeleteTheme(index)}
+                    sx={{ color: m3Colors.onSurfaceVariant }}
                   >
                     <Delete fontSize="small" />
                   </IconButton>

@@ -142,14 +142,14 @@ export default function Home() {
     saveToLocalStorage("cachedThemes", themes)
   }
 
-  const [tempTodo, setTempTodo] = useState<Todo>({
-    id: "temp",
+  const [todoCreator, setTodoCreator] = useState<Todo>({
+    id: "creator",
     title: "",
     completed: false,
     description: "",
     dueDate: null,
     theme: {
-      name: "Temporary",
+      name: "Creator",
       sources: {
         primary: { hue: 0, chroma: 0, tone: 80, hex: "#B0B0B0" },
         secondary: { hue: 0, chroma: 0, tone: 90, hex: "#D3D3D3" },
@@ -161,18 +161,19 @@ export default function Home() {
     createdAt: new Date().toISOString(),
   });
 
-  // Add a key to force re-render of temp todo
-  const [tempTodoKey, setTempTodoKey] = useState(0);
+  // Add a key to force re-render of TodoCreator
+  const [todoCreatorKey, setTodoCreatorKey] = useState(0);
 
-  const handleTempTodoChange = (updatedTempTodo: Todo) => {
-    setTempTodo(updatedTempTodo);
+  const handleTodoCreatorChange = (updatedCreator: Todo) => {
+    setTodoCreator(updatedCreator);
   };
 
-  const handleTempTodoSave = (value: string) => {
-    if (value.trim() !== "") {
+  const handleTodoCreatorSave = (value: string) => {
+    const trimmedValue = value.trim();
+    if (trimmedValue !== "") {
       const newTodo: Todo = {
         id: uuidv4(),
-        title: value,
+        title: trimmedValue,  // Use trimmed value
         completed: false,
         description: "",
         dueDate: null,
@@ -181,32 +182,39 @@ export default function Home() {
       };
 
       setTodos((prevTodos) => [...prevTodos, newTodo]);
-      setTempTodo((prev) => ({
+      setTodoCreator((prev) => ({
         ...prev,
         title: "",
         description: "",
       }));
-      // Increment key to force re-render and reset edit state
-      setTempTodoKey(prev => prev + 1);
+      setTodoCreatorKey(prev => prev + 1);
       enqueueSnackbar("New todo added", { variant: "success" });
+    } else {
+      enqueueSnackbar("Todo title cannot be empty", { variant: "error" });
     }
   };
 
-  const handleTempTodoCancel = () => {
-    setTempTodo((prev) => ({
+  const handleTodoCreatorCancel = () => {
+    setTodoCreator((prev) => ({
       ...prev,
       title: "",
       description: "",
     }));
     // Increment key to force re-render and reset edit state
-    setTempTodoKey(prev => prev + 1);
+    setTodoCreatorKey(prev => prev + 1);
   };
 
   return (
-    <Box sx={{ position: "relative", minHeight: "100vh", overflow: "hidden", bgcolor: m3Colors.background }}>
+    <Box sx={{ position: "relative", minHeight: "100vh", overflow: "hidden", bgcolor: m3Colors.surfaceVariant }}>
       <ParticleBackground particleColor={m3Colors.primary} />
 
-      <Container maxWidth="md" sx={{ py: 4, position: "relative", zIndex: 1, bgcolor: m3Colors.surface, borderRadius: 1 }}>
+      <Container maxWidth="md" sx={{ 
+        py: 4, 
+        position: "relative", 
+        zIndex: 1, 
+        mt: 4,
+        mb: 4
+      }}>
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4, p: 2, borderRadius: 1 }}>
           <Typography variant="h4" component="h1" fontWeight="bold" color={m3Colors.primary}>
             Themed Todo App
@@ -227,13 +235,14 @@ export default function Home() {
           </Box>
         </Box>
         <Divider sx={{ mb: 4, bgcolor: m3Colors.outlineVariant }} />
+
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
           modifiers={[restrictToVerticalAxis]}
         >
-          <SortableContext items={[...todos.map((t) => t.id), tempTodo.id]} strategy={verticalListSortingStrategy}>
+          <SortableContext items={todos.map((t) => t.id)} strategy={verticalListSortingStrategy}>
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
               {todos.map((todo) => (
                 <TodoItem
@@ -249,23 +258,27 @@ export default function Home() {
                   doubleClickToEdit
                 />
               ))}
-              <TodoItem
-                key={`temp-${tempTodoKey}`}
-                todo={tempTodo}
-                onUpdate={handleTempTodoChange}
-                onSave={handleTempTodoSave}
-                onCancel={handleTempTodoCancel}
-                onDelete={() => {}}
-                onDuplicate={() => {}}
-                onToggleSelect={() => {}}
-                isSelected={false}
-                cachedThemes={cachedThemes}
-                onSaveTheme={saveTheme}
-                startEditing
-              />
             </Box>
           </SortableContext>
         </DndContext>
+
+        {/* TodoCreator component */}
+        <Box sx={{ mt: 2 }}>
+          <TodoItem
+            key={`creator-${todoCreatorKey}`}
+            todo={todoCreator}
+            onUpdate={handleTodoCreatorChange}
+            onSave={handleTodoCreatorSave}
+            onCancel={handleTodoCreatorCancel}
+            onDelete={() => {}}
+            onDuplicate={() => {}}
+            onToggleSelect={() => {}}
+            isSelected={false}
+            cachedThemes={cachedThemes}
+            onSaveTheme={saveTheme}
+            startEditing
+          />
+        </Box>
       </Container>
 
       <Fab
