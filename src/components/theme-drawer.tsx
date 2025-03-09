@@ -49,7 +49,7 @@ export default function ThemeDrawer({
         neutral: hexToHCT("#939094"),
       });
     }
-  }, [open]);
+  }, [open, setSourceColors, sourceColors.primary]);
 
   const handleColorChange = (color: HCTColor) => {
     setSourceColors({

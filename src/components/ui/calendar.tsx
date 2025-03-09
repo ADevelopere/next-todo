@@ -54,8 +54,8 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        IconLeft: ({ ...props }) => <ChevronLeft className="h-4 w-4" />,
-        IconRight: ({ ...props }) => <ChevronRight className="h-4 w-4" />,
+        IconLeft,
+        IconRight,
       }}
       {...props}
     />
@@ -63,4 +63,7 @@ function Calendar({
 }
 Calendar.displayName = "Calendar"
 
-export { Calendar }
+const IconLeft = (props: React.SVGProps<SVGSVGElement>) => <ChevronLeft className="h-4 w-4" {...props} />;
+const IconRight = (props: React.SVGProps<SVGSVGElement>) => <ChevronRight className="h-4 w-4" {...props} />;
+
+export { Calendar, IconLeft, IconRight }

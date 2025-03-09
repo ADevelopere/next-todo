@@ -25,7 +25,7 @@ const defaultSourceColors: M3SourceColors = {
   secondary: hexToHCT("#958DA5"),
   tertiary: hexToHCT("#B58392"),
   error: hexToHCT("#B3261E"),
-  neutral: hexToHCT("#1C1B1F"),  // Added neutral color for better background tones
+  neutral: hexToHCT("#1C1B1F"), // Added neutral color for better background tones
 };
 
 interface ThemeContextType {
@@ -54,20 +54,22 @@ export function ThemeProvider({
 }>) {
   const [mode, setMode] = React.useState<ThemeMode>(initialMode);
   const [sourceColor, setSourceColor] = React.useState<string>("#1976d2");
-  const [sourceColors, setSourceColors] = React.useState<M3SourceColors>(defaultSourceColors);
+  const [sourceColors, setSourceColors] =
+    React.useState<M3SourceColors>(defaultSourceColors);
 
   // Load saved theme data only once on mount
   React.useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const savedMode = loadThemeFromStorage<ThemeMode>("themeMode");
-      const savedSourceColors = loadThemeFromStorage<M3SourceColors>("sourceColors");
+      const savedSourceColors =
+        loadThemeFromStorage<M3SourceColors>("sourceColors");
 
       if (savedMode) setMode(savedMode);
       if (savedSourceColors?.primary) {
         setSourceColors(savedSourceColors);
       }
     }
-  }, []);
+  }, [setMode, setSourceColors]);
 
   // Memoize colors to prevent unnecessary updates
   const m3Colors = React.useMemo(
@@ -101,7 +103,7 @@ export function ThemeProvider({
       m3Colors,
       theme,
     }),
-    [mode, sourceColor, sourceColors, m3Colors, theme]
+    [mode, sourceColor, sourceColors, m3Colors, theme, setTheme]
   );
 
   return (

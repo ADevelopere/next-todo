@@ -6,10 +6,11 @@ import {
   Typography,
   Dialog,
   useTheme,
+  Theme,
 } from "@mui/material";
 import { useState, useEffect, useCallback } from "react";
 import { Hct } from "@material/material-color-utilities";
-import { HCTColor } from "@/src/lib/theme-utils";
+import { HCTColor, M3Colors } from "@/src/lib/theme-utils";
 import { useThemeContext } from "./theme-provider";
 
 // Custom styles for the color picker
@@ -152,8 +153,8 @@ interface HueProps {
   color: HCTColor;
   handleChange: (event: Event, value: number | number[]) => void;
   handleHexChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  theme: any;
-  m3Colors: any;
+  theme: Theme;
+  m3Colors: M3Colors;
 }
 
 const Hue: React.FC<HueProps> = ({
@@ -285,7 +286,7 @@ export default function HCTColorPicker({
     if (initColor) {
       setColor(initColor);
     }
-  }, [initColor.hex]);
+  }, [initColor, setColor]);
 
   const updateColor = useCallback(
     (newColor: Partial<HCTColor>) => {
