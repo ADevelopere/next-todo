@@ -217,7 +217,7 @@ export default function Home() {
       }}>
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4, p: 2, borderRadius: 1 }}>
           <Typography variant="h4" component="h1" fontWeight="bold" color={m3Colors.primary}>
-            Themed Todo App
+            Todo
           </Typography>
 
           <Box>

@@ -21,6 +21,10 @@ export default function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <title>Todo</title>
+        <link rel="icon" href="/47-to-do-list.svg" type="image/svg+xml" />
+      </head>
       <body className={inter.className}>
       <NextThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <AppRouterCacheProvider>
